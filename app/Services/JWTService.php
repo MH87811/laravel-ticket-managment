@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\User;
+use App\TokenType;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use UnexpectedValueException;
+use RuntimeException;
+
+class JWTService
+{
+    private function secret(): string
+    {
+        $secret = config('jwt.secret');
+        if (!is_string($secret) || $secret === '') {
+            throw new RuntimeException('JWT_SECRET is configured');
+        }
+        return $secret;
+    }
+
+    private function getTtlForType(TokenType $type): int
+    {
+        return match ($type) {
+            TokenType::ACCESS => (int) config('jwt.access_ttl', 15),
+            TokenType::REFRESH => (int) config('jwt.refresh_ttl', 10080)
+        };
+    }
+
+    private function generateToken(User $user, TokenType $tokenType): string
+    {
+        $now = time();
+
+        $payload = [
+            'iss' => config('jwt.issuer'),
+            'iat' => $now,
+            'exp' => $now + ($this->getTtlForType($tokenType) * 60),
+            'sub' => (string) $user->getKey(),
+            'jti' => bin2hex(random_bytes(16)),
+            'type' => $tokenType->value,
+        ];
+
+        return JWT::encode(
+            $payload,
+            $this->secret(),
+            config('jwt.algorithm', 'HS256')
+        );
+    }
+
+    public function generateTokensPair(User $user): array
+    {
+        $accessToken = $this->generateToken($user, TokenType::ACCESS);
+        $refreshToken = $this->generateToken($user, TokenType::REFRESH);
+        return [
+            'access' => $accessToken,
+            'refresh' => $refreshToken,
+        ];
+    }
+
+    public function validateToken(string $token, TokenType $tokenType): \stdClass
+    {
+        $key = new Key($this->secret(), config('jwt.algorithm', 'HS256'));
+
+        $parsedToken = JWT::decode($token, $key);
+
+        if (
+            !isset($parsedToken->type) ||
+            $parsedToken->type !== $tokenType->value
+        ) {
+            throw new UnexpectedValueException('Invalid token type.');
+        }
+
+        if (
+            !isset($parsedToken->sub) ||
+            !is_string($parsedToken->sub) ||
+            $parsedToken->sub === ''
+        ) {
+            throw new UnexpectedValueException('Invalid token subject.');
+        }
+
+        if (
+            !isset($parsedToken->iss) ||
+            $parsedToken->iss !== config('jwt.issuer')
+        ) {
+            throw new UnexpectedValueException('Invalid token issuer.');
+        }
+
+        return $parsedToken;
+    }
+}
