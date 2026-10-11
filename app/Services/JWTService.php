@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\RefreshToken;
 use App\Models\User;
 use App\TokenType;
 use Firebase\JWT\JWT;
@@ -15,7 +16,7 @@ class JWTService
     {
         $secret = config('jwt.secret');
         if (!is_string($secret) || $secret === '') {
-            throw new RuntimeException('JWT_SECRET is configured');
+            throw new RuntimeException('JWT_SECRET is not configured');
         }
         return $secret;
     }
@@ -87,5 +88,18 @@ class JWTService
         }
 
         return $parsedToken;
+    }
+
+    public function saveRefreshToken(string $token, ?string $ipAddress = null, ?string $userAgent = null)
+    {
+        $payload = $this->validateToken($token, TokenType::REFRESH);
+
+        return RefreshToken::create([
+            'user_id' => $payload->sub,
+            'refresh_token_hash' => hash('sha256', $token),
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+            'expires_at' => Carbon\Carbon::createFromTimestampUTC($payload->exp),
+        ]);
     }
 }
