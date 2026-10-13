@@ -102,7 +102,6 @@ class JWTServiceTest extends TestCase
 
         $parts[1] = \Firebase\JWT\JWT::urlsafeB64Encode(json_encode($payload, JSON_THROW_ON_ERROR));
 
-        $parts[1] = $parts[1] === '' ? 'YQ' : ($parts[1][0] === 'A' ? 'B' . substr($parts[1], 1) : 'A' . substr($parts[1], 1));
         $tampered_token = implode('.', $parts);
 
         $this->expectException(\UnexpectedValueException::class);

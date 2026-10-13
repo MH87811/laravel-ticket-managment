@@ -43,4 +43,44 @@ class Response
         );
         return $response->cookie($cookie);
     }
+
+    public function unauthorizedError(string $action): JsonResponse
+    {
+        return $this->error(
+            message: 'Authentication Required',
+            error: "Authentication Required To {$action}",
+            error_code: 'UNAUTHORIZED',
+            status_code: 401,
+        );
+    }
+
+    public function permissionDeniedError(string $action, ?string $reason): JsonResponse
+    {
+        return $this->error(
+            message: 'Permission Denied',
+            error: $reason ?? "Permission Denied For {$action}",
+            error_code: 'FORBIDDEN',
+            status_code: 403,
+        );
+    }
+
+    public function notFoundError(string $objectName): JsonResponse
+    {
+        return $this->error(
+            message: 'could not find requested object',
+            error: "$objectName Not Found",
+            error_code: 'NOT_FOUND',
+            status_code: 404,
+        );
+    }
+
+    public function internalServerError(/*string $error*/): JsonResponse
+    {
+        return $this->error(
+            message: 'Something went wrong',
+//            error: $error,
+            error_code: 'INTERNAL_SERVER_ERROR',
+            status_code: 500,
+        );
+    }
 }

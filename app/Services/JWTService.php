@@ -9,6 +9,7 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use UnexpectedValueException;
 use RuntimeException;
+use Carbon\Carbon;
 
 class JWTService
 {
@@ -99,7 +100,7 @@ class JWTService
             'refresh_token_hash' => hash('sha256', $token),
             'ip_address' => $ipAddress,
             'user_agent' => $userAgent,
-            'expires_at' => Carbon\Carbon::createFromTimestampUTC($payload->exp),
+            'expires_at' => Carbon::createFromTimestampUTC($payload->exp),
         ]);
     }
 }

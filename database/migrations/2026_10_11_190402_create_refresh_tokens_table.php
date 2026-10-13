@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('refresh_tokens', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users', 'id');
+            $table->foreignId('user_id')->constrained('users', 'id')->onDelete('cascade');
             $table->string('refresh_token_hash')->unique();
             $table->string('ip_address')->nullable();
             $table->text('user_agent')->nullable();

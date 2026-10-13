@@ -12,4 +12,12 @@ class RefreshToken extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    protected function casts(): array
+    {
+        return [
+            'expires_at' => 'immutable_datetime',
+            'revoked_at' => 'immutable_datetime',
+        ];
+    }
 }
