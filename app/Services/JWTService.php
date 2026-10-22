@@ -67,13 +67,6 @@ class JWTService
         $parsedToken = JWT::decode($token, $key);
 
         if (
-            $tokenType->value === TokenType::REFRESH->value
-            && !$this->getTokenFromDB($token, $tokenType)
-        ) {
-            throw new UnexpectedValueException('Invalid token type.');
-        }
-
-        if (
             !isset($parsedToken->type) ||
             $parsedToken->type !== $tokenType->value
         ) {
@@ -118,7 +111,7 @@ class JWTService
         return RefreshToken::where([
             'user_id' => $payload->sub,
             'jti' => $payload->jti,
-        ]);
+        ])->first();
     }
 
     public function revokeToken(string $token, TokenType $type): void

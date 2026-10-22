@@ -71,7 +71,7 @@ class AuthController extends Controller
     {
         $credentials = $request->validate([
             'identifier' => 'required|string',
-            'password' => 'required'
+            'password' => 'string|required'
         ]);
 
         $identifier = $credentials['identifier'];
@@ -82,7 +82,7 @@ class AuthController extends Controller
                 ->orWhere('users.email', $identifier);
         })->first();
 
-        if (!$user || Hash::check($credentials['password'], $user->password)) {
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
             return $this->response->error(
                 message: 'Authentication Failure',
                 error: 'Invalid Credentials',

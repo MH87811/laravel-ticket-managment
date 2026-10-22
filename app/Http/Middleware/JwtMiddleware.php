@@ -19,7 +19,7 @@ class JwtMiddleware
         $guard = auth('api');
 
         if(!$guard->check()) {
-            return app(ApiResponse::class)->unauthorized(null);
+            return app(ApiResponse::class)->unauthorizedError(null);
         }
 
         return $next($request);
