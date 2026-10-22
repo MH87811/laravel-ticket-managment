@@ -67,6 +67,13 @@ class JWTService
         $parsedToken = JWT::decode($token, $key);
 
         if (
+            $tokenType->value === TokenType::REFRESH->value
+            && !$this->getTokenFromDB($token, $tokenType)
+        ) {
+            throw new UnexpectedValueException('Invalid token type.');
+        }
+
+        if (
             !isset($parsedToken->type) ||
             $parsedToken->type !== $tokenType->value
         ) {
@@ -98,9 +105,30 @@ class JWTService
         return RefreshToken::create([
             'user_id' => $payload->sub,
             'refresh_token_hash' => hash('sha256', $token),
+            'jti' => $payload->jti,
             'ip_address' => $ipAddress,
             'user_agent' => $userAgent,
             'expires_at' => Carbon::createFromTimestampUTC($payload->exp),
+        ]);
+    }
+
+    public function getTokenFromDB(string $token, TokenType $tokenType): ?RefreshToken
+    {
+        $payload = $this->validateToken($token, $tokenType);
+        return RefreshToken::where([
+            'user_id' => $payload->sub,
+            'jti' => $payload->jti,
+        ]);
+    }
+
+    public function revokeToken(string $token, TokenType $type): void
+    {
+        $token = $this->getTokenFromDB($token, $type);
+        if (!$token) {
+            throw new UnexpectedValueException('Token does not exists.');
+        };
+        $token->updateOrFail([
+            'revoked_at' => Carbon::createFromTimestampUTC(time())
         ]);
     }
 }

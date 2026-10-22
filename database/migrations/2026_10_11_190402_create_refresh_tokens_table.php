@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users', 'id')->onDelete('cascade');
             $table->string('refresh_token_hash')->unique();
+            $table->string('jti')->unique();
             $table->string('ip_address')->nullable();
             $table->text('user_agent')->nullable();
             $table->timestamp('expires_at');
