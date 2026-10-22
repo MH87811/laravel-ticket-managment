@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Response;
+namespace App\Http\Responses;
 
 use Illuminate\Http\JsonResponse;
 
@@ -12,6 +12,15 @@ class Response
             'message' => $message,
             'detail' => $detail
         ], $status_code);
+    }
+
+    public function created(string $objectName, mixed $detail)
+    {
+        return $this->success(
+            message: "$objectName Created Successfully",
+            detail: $detail,
+            status_code: 201,
+        );
     }
 
     public function error(string $message, mixed $error = null, string $error_code = 'BAD_REQUEST', int $status_code = 400): JsonResponse
@@ -48,7 +57,7 @@ class Response
     {
         return $this->error(
             message: 'Authentication Required',
-            error: "Authentication Required To {$action}",
+            error: 'Authentication Required' . $action ? "To {$action}" : '.',
             error_code: 'UNAUTHORIZED',
             status_code: 401,
         );
@@ -58,7 +67,7 @@ class Response
     {
         return $this->error(
             message: 'Permission Denied',
-            error: $reason ?? "Permission Denied For {$action}",
+            error: $reason ?? 'Permission Denied For' . $action ? "To {$action}" : '.',
             error_code: 'FORBIDDEN',
             status_code: 403,
         );

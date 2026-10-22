@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Response\Response as ApiResponse;
+use App\Http\Middleware\JwtMiddleware;
+use App\Http\Responses\Response as ApiResponse;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -10,6 +11,7 @@ use Illuminate\Validation\UnauthorizedException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -20,7 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'jwt' => JwtMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
@@ -47,6 +51,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 return app(ApiResponse::class)->notFoundError(class_basename($e->getModel()));
             }
         );
+//        $exceptions->render(
+//            function (NotFoundHttpException $e, Request $request) {
+//                if (!$request->is('api/*') && !$request->expectsJson()) {
+//                    return null;
+//                }
+//                return app(ApiResponse::class)->notFoundError();
+//            }
+//        );
         $exceptions->render(
             function (UnauthorizedException $e, Request $request) {
                 if (!$request->is('api/*') && !$request->expectsJson()) {

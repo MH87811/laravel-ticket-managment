@@ -16,7 +16,7 @@ class JWTService
     private function secret(): string
     {
         $secret = config('jwt.secret');
-        if (!is_string($secret) || $secret === '') {
+        if (!is_string($secret) || rtrim($secret) === '') {
             throw new RuntimeException('JWT_SECRET is not configured');
         }
         return $secret;
@@ -76,7 +76,7 @@ class JWTService
         if (
             !isset($parsedToken->sub) ||
             !is_string($parsedToken->sub) ||
-            $parsedToken->sub === ''
+            trim($parsedToken->sub) === ''
         ) {
             throw new UnexpectedValueException('Invalid token subject.');
         }
