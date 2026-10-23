@@ -6,9 +6,13 @@ use App\Http\Responses\Response as ApiResponse;
 use App\Models\User;
 use App\Services\JWTService;
 use App\TokenType;
+use Carbon\Carbon;
+use DomainException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use InvalidArgumentException;
+use UnexpectedValueException;
 
 class AuthController extends Controller
 {
@@ -120,24 +124,70 @@ class AuthController extends Controller
 
     public function refresh(Request $request)
     {
-        $refreshToken = $request->cookie('refresh_token');
+        $rawRefreshToken = $request->cookie('refresh_token');
 
-        if (!trim($refreshToken)) {
-            return $this->response->unauthorizedError(reason: 'Token Not Provided');
+        if (!is_string($rawRefreshToken) || trim($rawRefreshToken) === '') {
+            return $this->response->error(
+                message: 'Authentication Failure',
+                error: 'Refresh token is missing or invalid.',
+                error_code: 'AUTHENTICATION_FAILED',
+                status_code: 401,
+            );
         }
-        if (!$this->jwtService->getTokenFromDB($refreshToken)) {
-            return $this->response->unauthorizedError(reason: 'Token Not Provided');
+
+        try {
+            $tokens = DB::transaction(function () use ($request, $rawRefreshToken) {
+                $storedToken = $this->jwtService->getTokenFromDB(
+                    token: $rawRefreshToken,
+                    lockForUpdate: true,
+                );
+
+                if (!$storedToken) {
+                    throw new UnexpectedValueException(
+                        'Refresh token is invalid, expired, or already used.'
+                    );
+                }
+
+                $user = $storedToken->user;
+
+                if (!$user || !$user->is_active) {
+                    throw new UnexpectedValueException(
+                        'The account is not active.'
+                    );
+                }
+
+                $storedToken->updateOrFail([
+                    'revoked_at' => Carbon::now('UTC'),
+                ]);
+
+                $newTokens = $this->jwtService->generateTokensPair($user);
+
+                $this->jwtService->saveRefreshToken(
+                    token: $newTokens['refresh'],
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                );
+
+                return [
+                    'access' => $newTokens['access'],
+                    'refresh' => $newTokens['refresh'],
+                    'user' => $user->load('profile'),
+                ];
+            });
+        } catch (UnexpectedValueException | InvalidArgumentException | DomainException $exception) {
+            return $this->response->error(
+                message: 'Authentication Failure',
+                error: 'Refresh token is invalid, expired, or already used.',
+                error_code: 'AUTHENTICATION_FAILED',
+                status_code: 401,
+            );
         }
-
-        $payload = $this->jwtService->validateToken($refreshToken, TokenType::REFRESH);
-        $user = User::findOrFail($payload->sub);
-
-        $tokens = $this->jwtService->generateTokensPair($user);
 
         $response = $this->response->success(
-            message: 'Refreshed Successful',
+            message: 'Token Refreshed Successfully',
             detail: [
                 'access' => $tokens['access'],
+                'user' => $tokens['user'],
             ],
         );
 
@@ -148,7 +198,6 @@ class AuthController extends Controller
             cookieExpMinutes: (int) config('jwt.refresh_ttl', 43200),
         );
     }
-
     public function me(Request $request)
     {
         return $this->response->success(

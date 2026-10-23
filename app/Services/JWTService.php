@@ -113,15 +113,22 @@ class JWTService
         ]);
     }
 
-    public function getTokenFromDB(string $token): ?RefreshToken
+    public function getTokenFromDB(string $token, bool $lockForUpdate = false): ?RefreshToken
     {
         $payload = $this->validateToken($token, TokenType::REFRESH);
-        return RefreshToken::where([
-            'user_id' => $payload->sub,
-            'jti' => $payload->jti,
-            'revoked_at' => null,
-            'refresh_token_hash' => hash('sha256', $token),
-        ])->where('expires_at', '>', now())->first();
+
+        $query = RefreshToken::query()
+            ->where('user_id', $payload->sub)
+            ->where('jti', $payload->jti)
+            ->where('refresh_token_hash', hash('sha256', $token))
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', now());
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
     }
 
     public function revokeToken(string $token): void
