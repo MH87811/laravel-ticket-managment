@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Responses\Response as ApiResponse;
 use App\Models\User;
 use App\Services\JWTService;
+use App\TokenType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    function __construct(private ApiResponse $response, private JWTService $jwtService) {    }
+    function __construct(private ApiResponse $response, private JWTService $jwtService) {}
 
     public function register(Request $request)
     {
@@ -109,6 +110,37 @@ class AuthController extends Controller
                 'user' => $user->load('profile'),
             ],
         );
+        return $this->response->withCookie(
+            response: $response,
+            cookieName: 'refresh_token',
+            cookieValue: $tokens['refresh'],
+            cookieExpMinutes: (int) config('jwt.refresh_ttl', 43200),
+        );
+    }
+
+    public function refresh(Request $request)
+    {
+        $refreshToken = $request->cookie('refresh_token');
+
+        if (!trim($refreshToken)) {
+            return $this->response->unauthorizedError(reason: 'Token Not Provided');
+        }
+        if (!$this->jwtService->getTokenFromDB($refreshToken)) {
+            return $this->response->unauthorizedError(reason: 'Token Not Provided');
+        }
+
+        $payload = $this->jwtService->validateToken($refreshToken, TokenType::REFRESH);
+        $user = User::findOrFail($payload->sub);
+
+        $tokens = $this->jwtService->generateTokensPair($user);
+
+        $response = $this->response->success(
+            message: 'Refreshed Successful',
+            detail: [
+                'access' => $tokens['access'],
+            ],
+        );
+
         return $this->response->withCookie(
             response: $response,
             cookieName: 'refresh_token',

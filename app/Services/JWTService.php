@@ -26,13 +26,13 @@ class JWTService
     {
         return match ($type) {
             TokenType::ACCESS => (int) config('jwt.access_ttl', 15),
-            TokenType::REFRESH => (int) config('jwt.refresh_ttl', 10080)
+            TokenType::REFRESH => (int) config('jwt.refresh_ttl', 43200)
         };
     }
 
     private function generateToken(User $user, TokenType $tokenType): string
     {
-        $now = time();
+        $now = now();
 
         $payload = [
             'iss' => config('jwt.issuer'),
@@ -88,6 +88,14 @@ class JWTService
             throw new UnexpectedValueException('Invalid token issuer.');
         }
 
+        if (
+            !isset($parsedToken->jti) ||
+            !is_string($parsedToken->jti) ||
+            trim($parsedToken->jti) === ''
+        ) {
+            throw new UnexpectedValueException('Invalid token ID.');
+        }
+
         return $parsedToken;
     }
 
@@ -105,23 +113,25 @@ class JWTService
         ]);
     }
 
-    public function getTokenFromDB(string $token, TokenType $tokenType): ?RefreshToken
+    public function getTokenFromDB(string $token): ?RefreshToken
     {
-        $payload = $this->validateToken($token, $tokenType);
+        $payload = $this->validateToken($token, TokenType::REFRESH);
         return RefreshToken::where([
             'user_id' => $payload->sub,
             'jti' => $payload->jti,
-        ])->first();
+            'revoked_at' => null,
+            'refresh_token_hash' => hash('sha256', $token),
+        ])->where('expires_at', '>', now())->first();
     }
 
-    public function revokeToken(string $token, TokenType $type): void
+    public function revokeToken(string $token): void
     {
-        $token = $this->getTokenFromDB($token, $type);
-        if (!$token) {
+        $refreshToken = $this->getTokenFromDB($token);
+        if (!$refreshToken) {
             throw new UnexpectedValueException('Token does not exists.');
         };
-        $token->updateOrFail([
-            'revoked_at' => Carbon::createFromTimestampUTC(time())
+        $refreshToken->updateOrFail([
+            'revoked_at' => Carbon::now('UTC')
         ]);
     }
 }

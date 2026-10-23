@@ -14,7 +14,7 @@ class Response
         ], $status_code);
     }
 
-    public function created(string $objectName, mixed $detail)
+    public function created(string $objectName, mixed $detail): JsonResponse
     {
         return $this->success(
             message: "$objectName Created Successfully",
@@ -53,17 +53,17 @@ class Response
         return $response->cookie($cookie);
     }
 
-    public function unauthorizedError(string $action): JsonResponse
+    public function unauthorizedError(?string $reason = null, ?string $action = null): JsonResponse
     {
         return $this->error(
             message: 'Authentication Required',
-            error: 'Authentication Required' . $action ? "To {$action}" : '.',
+            error: !$reason ? ('Authentication Required' . $action ? "To {$action}" : '.') : $reason,
             error_code: 'UNAUTHORIZED',
             status_code: 401,
         );
     }
 
-    public function permissionDeniedError(string $action, ?string $reason): JsonResponse
+    public function permissionDeniedError(string $action, ?string $reason = null): JsonResponse
     {
         return $this->error(
             message: 'Permission Denied',
