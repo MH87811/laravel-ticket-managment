@@ -19,7 +19,7 @@ class JwtMiddleware
         $guard = auth('api');
 
         if(!$guard->check()) {
-            return app(ApiResponse::class)->unauthorizedError(null);
+            return app(ApiResponse::class)->unauthorizedError(reason: 'Token Invalid');
         }
 
         return $next($request);

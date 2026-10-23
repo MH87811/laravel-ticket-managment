@@ -98,7 +98,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 if (!$request->is('api/*') && !$request->expectsJson()) {
                     return null;
                 }
-                return app(ApiResponse::class)->internalServerError();
+                return app(ApiResponse::class)->internalServerError($e->getMessage() . $e->getFile() . $e->getLine());
             }
         );
     })->create();

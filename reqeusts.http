@@ -1,2 +1,38 @@
+@host = 127.0.0.1:8000/api
+@auth = {{host}}/auth
+
 ###
-GET 127.0.0.1:8000/api/test
+
+POST {{auth}}/register
+Content-Type: application/json
+
+{
+    "username": "test",
+    "email": "test@test.com",
+    "phone": "09111111111",
+    "password": "1234",
+    "password_confirmation": "1234",
+    "first_name": "test",
+    "last_name": "testi",
+    "bio": "testing",
+    "avatar": "/home/mh87811/Pictures/Screenshots/Screenshotfrom2024-07-03 08-22-46.png"
+}
+
+###
+
+POST {{auth}}/login
+Content-Type: application/json
+
+{
+    "identifier": "test@test.com",
+    "password": "1234"
+}
+
+###
+
+POST {{auth}}/refresh
+
+###
+
+GET {{auth}}/me
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJMYXJhdmVsIiwiaWF0IjoxNzkyNzcwMDQwLCJleHAiOjE3OTI3NzA5NDAsInN1YiI6IjYiLCJqdGkiOiJjNTU3NzkwMGRiMzJjNTFlMTVjYzVlNjU3ODY0ZWFjNCIsInR5cGUiOiJhY2Nlc3MifQ.rY084_Her3JBL65tbVzwDaGxhln2vwIEoyPt-xRus8I

@@ -32,12 +32,12 @@ class JWTService
 
     private function generateToken(User $user, TokenType $tokenType): string
     {
-        $now = now();
+        $now = time();
 
         $payload = [
             'iss' => config('jwt.issuer'),
             'iat' => $now,
-            'exp' => $now + ($this->getTtlForType($tokenType) * 60),
+            'exp' => (int) $now + ($this->getTtlForType($tokenType) * 60),
             'sub' => (string) $user->getKey(),
             'jti' => bin2hex(random_bytes(16)),
             'type' => $tokenType->value,

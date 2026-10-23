@@ -29,7 +29,7 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'bio' => 'required|string',
-            'avatar' => 'required|string|max:255',
+            'avatar' => 'string|max:255',
         ]);
 
         $userData = [
@@ -61,7 +61,10 @@ class AuthController extends Controller
 
         $response = $this->response->created(
             objectName: class_basename(User::class),
-            detail: $user->load('profile'),
+            detail: [
+                'user' => $user->load('profile'),
+                'access' => $tokens['access']
+            ],
         );
 
         return $this->response->withCookie(

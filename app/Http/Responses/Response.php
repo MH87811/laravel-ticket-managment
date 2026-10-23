@@ -57,7 +57,7 @@ class Response
     {
         return $this->error(
             message: 'Authentication Required',
-            error: !$reason ? ('Authentication Required' . $action ? "To {$action}" : '.') : $reason,
+            error: !$reason ? ('Authentication Required' . ($action ? "To {$action}" : '.')) : $reason,
             error_code: 'UNAUTHORIZED',
             status_code: 401,
         );
@@ -67,7 +67,7 @@ class Response
     {
         return $this->error(
             message: 'Permission Denied',
-            error: $reason ?? 'Permission Denied For' . $action ? "To {$action}" : '.',
+            error: $reason ?? 'Permission Denied For' . ($action ? "To {$action}" : '.'),
             error_code: 'FORBIDDEN',
             status_code: 403,
         );
@@ -83,11 +83,11 @@ class Response
         );
     }
 
-    public function internalServerError(/*string $error*/): JsonResponse
+    public function internalServerError(string $error): JsonResponse
     {
         return $this->error(
             message: 'Something went wrong',
-//            error: $error,
+            error: $error,
             error_code: 'INTERNAL_SERVER_ERROR',
             status_code: 500,
         );
